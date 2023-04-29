@@ -1,26 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace WeaverBot
+﻿namespace WeaverBot
 {
-    class Graph
+    /// <summary>Represents a graph of the adjacent words in weaver game</summary>
+    public class Graph
     {
-        public int[][] Matrix;
-        public string[] Words { get; }
+        ///<summary>An adjacency matrix for the graph</summary>
+        private int[][] Matrix { get; }
+        ///<summary>A list of valid weaver words</summary>
+        private string[] Words { get; }
+
+        /// <summary>Graph constructor</summary>
+        /// <param name="words">an array of words to use to generate the array</param>
         public Graph(string[] words)
         {
             Words = PrepareWords(words);
             Matrix = GenerateMatrix(Words);
         }
 
+        /// <summary>Produce the a list of answers for a weaver game given the starting and ending words</summary>
+        /// <returns>an array of answers, which is an array of strings representing the words to play in the weaver game</returns>
         public string[][] PlayWeaver(string startWord, string endWord)
         {
             int startVertex = LookupIndex(startWord);
             int endVertex = LookupIndex(endWord);
 
-            List<int>[] prevVerts = DepthFirstSearch(startVertex, endVertex);
+            List<int>[] prevVertices = BreadthFirstSearch(startVertex, endVertex);
             
-            Node root = BackTrackTree(prevVerts, endVertex);
+            Node root = CreateBackTrackTree(prevVertices, endVertex);
             List<int[]> vertexPathsList = FindAllPathsFromBackTrackTree(root);
             return VertexPathsToWordsPaths(vertexPathsList);
         }
@@ -50,6 +55,9 @@ namespace WeaverBot
             }
         }
 
+        /// <summary>Generate matrix from list of words</summary>
+        /// <param name="words">list of valid weaver words</param>
+        /// <returns>adjacency matrix</returns>
         private int[][] GenerateMatrix(string[] words)
         {
             List<int>[] dynamicMatrix = new List<int>[Words.Length];
@@ -78,6 +86,7 @@ namespace WeaverBot
         }
 
         /// <summary>Checks that two words can be used one after another in a weaver game.
+        /// <return>true if adjacent, false if not</return>
         private static bool IsAdjacent(string word1, string word2)
         {
             int numDifferent = 0;
@@ -114,11 +123,13 @@ namespace WeaverBot
             throw new ArgumentException($"{word} does not exist in word list");
         }
 
-        private List<int>[] DepthFirstSearch(int startVertex, int endVertex)
+        /// <summary>Breadth First Search (BFS) of the adjacency matrix, starting from the startVertex and ending at the endVertex</summary>
+        /// <return>A array of lists of integers, where the index of the array represents the vertex, and the index of the list represents which vertices preceded the current vertex.</return>
+        private List<int>[] BreadthFirstSearch(int startVertex, int endVertex)
         {
             Queue<int> currentVertexQueue = new Queue<int>();
             Queue<int> nextVertexQueue = new Queue<int>();
-            List<int>[] prevVerts = new List<int>[Words.Length];
+            List<int>[] prevVertices = new List<int>[Words.Length];
             bool[] visited = new bool[Words.Length];
             nextVertexQueue.Enqueue(startVertex);
             visited[startVertex] = true;
@@ -144,13 +155,13 @@ namespace WeaverBot
                         {
                             if (!visited[nextVertex])
                             {
-                                if (prevVerts[nextVertex] == null)
+                                if (prevVertices[nextVertex] == null)
                                 {
-                                    prevVerts[nextVertex] = new List<int>() { vertex };
+                                    prevVertices[nextVertex] = new List<int>() { vertex };
                                 }
                                 else
                                 {
-                                    prevVerts[nextVertex].Add(vertex);
+                                    prevVertices[nextVertex].Add(vertex);
                                 }
 
                                 if (!newlyVisited[nextVertex])
@@ -171,10 +182,14 @@ namespace WeaverBot
                     }
                 }
             }
-            return prevVerts;
+            return prevVertices;
         }
 
-        private Node BackTrackTree(List<int>[] prevVerts, int endVertex)
+        /// <summary>Create a tree from the BreadFirstSearch array of lists (prevVertices) starting from the endVertex and backtracking to the startVertex (the vertex with no previous vertices)</summary>
+        /// <param name="prevVertices">The result of the BreadthFirstSearch method</param>
+        /// <param name="endVertex">vertex representing the end word</param>
+        /// <returns>The root node of a tree describing the various paths from the endVertex to the startVertex. The root node represents the endVertex node.</returns>
+        private Node CreateBackTrackTree(List<int>[] prevVertices, int endVertex)
         {
             int currentVertex = endVertex;
             Node root = new Node(endVertex);
@@ -183,7 +198,7 @@ namespace WeaverBot
             while (q.Count > 0)
             {
                 Node node = q.Dequeue();
-                node.AddChildren(prevVerts[node.Vertex]);
+                node.AddChildren(prevVertices[node.Vertex]);
                 if (node.Children != null)
                 {
                     foreach (Node child in node.Children)
@@ -195,6 +210,9 @@ namespace WeaverBot
             return root;
         }
 
+        /// <summary>Creates list of arrays representing paths from the start vertex to the end vertex given the root Node of the back track tree produced by the CreateBackTrackTree method. Calls recursive FindPathFromTree method with starting parameters.</summary>
+        /// <param name="root">root of back track tree</param>
+        /// <returns>List of paths through the back track tree</returns>
         private List<int[]> FindAllPathsFromBackTrackTree(Node root)
         {
             List<int[]> paths = new List<int[]>();
@@ -202,7 +220,11 @@ namespace WeaverBot
             return paths;
         }
 
-        private void FindPathFromTree(Node node, int[] previousPath, List<int[]> finalPaths)
+        /// <summary>Recursive function to generate all the paths of the tree from the root to the leaf nodes</summary>
+        /// <param name="node">current node</param>
+        /// <param name="previousPath">path from root to the parent of the current node</param>
+        /// <param name="completePaths">List to which complete paths are added</param>
+        private void FindPathFromTree(Node node, int[] previousPath, List<int[]> completePaths)
         {
             int[] currentPath = new int[previousPath.Length + 1];
             Array.Copy(previousPath, currentPath, previousPath.Length);
@@ -211,17 +233,20 @@ namespace WeaverBot
             if (node.Children == null)
             {
                 Array.Reverse(currentPath);
-                finalPaths.Add(currentPath);
+                completePaths.Add(currentPath);
             }
             else
             {
                 foreach (Node child in node.Children)
                 {
-                    FindPathFromTree(child, currentPath, finalPaths);
+                    FindPathFromTree(child, currentPath, completePaths);
                 }
             }
         }
 
+        /// <summary>Convert a list of paths of vertices (ints) to an array of paths of words (strings)</summary>
+        /// <param name="vertexPaths">List of paths of vertices (ints)</param>
+        /// <returns>array of paths of words</returns>
         private string[][] VertexPathsToWordsPaths(List<int[]> vertexPaths)
         {
             string[][] wordsPaths = new string[vertexPaths.Count][];

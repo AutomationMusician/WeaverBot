@@ -1,9 +1,10 @@
-﻿using System;
-
-namespace WeaverBot
+﻿namespace WeaverBot
 {
-    class Program {         
-        public static void Main(string[] args)
+    /// <summary>WeaverBot entrypoint class</summary>
+    class Program
+    {
+        /// <summary>WeaverBot entrypoint method</summary>
+        static void Main(string[] args)
         {
             if (args.Length < 2)
             {
@@ -15,21 +16,20 @@ namespace WeaverBot
             PrintAnswers(answers);
         }
 
+        /// <summary>Load words from local file</summary>
+        /// <returns>array of valid words</returns>
         private static string[] LoadWords()
         {
             return File.ReadAllLines("./words.txt");
         }
         
+        /// <summary>Print the answers of a weaver game to the console</summary>
+        /// <param name="answers">answers for a weaver game</param>
         private static void PrintAnswers(string[][] answers)
         {
             for (int i=0; i<answers.Length; i++)
             {
-                Console.WriteLine($"Optimal path {i+1}");
-                foreach (string word in answers[i])
-                {
-                    Console.WriteLine(word);
-                }
-                Console.WriteLine();
+                Console.WriteLine($"Optimal path {i+1}: {string.Join(", ", answers[i])}");
             }
         }
     }

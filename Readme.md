@@ -1,6 +1,6 @@
 # Weaver Bot
 
-A bot to find optimal solutions to [Weaver - A daily word ladder game](https://wordwormdormdork.com/)
+A bot to find optimal solutions to [Weaver - A daily word ladder game](https://wordwormdormdork.com/).
 
 # Usage
 On a computer with .net 6 sdk installed, navigate to the top level directory of this repository and run the following command:
